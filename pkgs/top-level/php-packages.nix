@@ -46,6 +46,7 @@
 , uwimap
 , valgrind
 , zlib
+, fetchpatch
 }:
 
 lib.makeScope pkgs.newScope (self: with self; {
@@ -332,7 +333,19 @@ lib.makeScope pkgs.newScope (self: with self; {
         }
         { name = "exif"; doCheck = false; }
         { name = "ffi"; buildInputs = [ libffi ]; }
-        { name = "fileinfo"; buildInputs = [ pcre2 ]; }
+        {
+          name = "fileinfo";
+          buildInputs = [ pcre2 ];
+          patches = lib.optionals (lib.versionAtLeast php.version "8.3") [
+            # Fix the extension unable to be loaded due to missing `get_module` function.
+            # `ZEND_GET_MODULE` macro that creates it is conditional on `COMPILE_DL_FILEINFO` being defined.
+            # https://github.com/php/php-src/issues/11408#issuecomment-1602106200
+            (fetchpatch {
+              url = "https://github.com/php/php-src/commit/b0ba368d538ba2193e19e98ea8176f6ce63cbd44.patch";
+              hash = "sha256-7PzvMFkH22jckujuvOFw115pT3QVK0aHY6wvFZxwTW4=";
+            })
+          ];
+        }
         { name = "filter"; buildInputs = [ pcre2 ]; }
         { name = "ftp"; buildInputs = [ openssl ]; }
         {
